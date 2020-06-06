@@ -1,0 +1,82 @@
+service: iot-encryption-be
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage_default: dev
+  variableSyntax: "\\${((?!AWS::)[ ~:a-zA-Z0-9._@'\",\\-\\/\\(\\)]+?)}"
+  stage: ${opt:stage, self:provider.stage_default}
+  profile_default: ${self:provider.stage}
+  profile: ${opt:profile, self:provider.profile_default}
+  environment: ${file(serverless.env.yml):${self:provider.stage}}
+  region: eu-west-1
+  versionFunctions: false
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource:
+        - '*'
+    - Effect: "Allow"
+      Action: "dynamodb:*"
+      Resource:
+        - "*"
+
+
+custom:
+  pythonRequirements:
+    slim: true
+    usePipenv: true
+    dockerizePip: true
+
+package:
+  exclude:
+    - .venv/**
+    - .vscode/**
+    - .env
+    - venv/**
+    - .pytest_cache/**
+    - .serverless/**
+    - docs/**
+    - node_modules/**
+    - tests/**
+    - .idea/**
+
+functions:
+
+  GetListOfMessages:
+    handler: iot_encryption_be.handlers.get_all_messages
+    events:
+      - http:
+          path: messages
+          integration: lambda-proxy
+          method: get
+
+  AddMessage:
+    handler: iot_encryption_be.handlers.add_message
+    events:
+      - http:
+          path: messages
+          integration: lambda-proxy
+          method: post
+
+  EncryptMessageFromDB:
+    handler: iot_encryption_be.handlers.encrypt_message_from_db
+    events:
+      - http:
+          path: messages/encrypt/{id}
+          integration: lambda-proxy
+          method: post
+
+  DecryptMessageFromDB:
+    handler: iot_encryption_be.handlers.decrypt_message_from_db
+    events:
+      - http:
+          path: messages/decrypt/{id}
+          integration: lambda-proxy
+          method: post
+
+
+
+plugins:
+  - serverless-python-requirements
