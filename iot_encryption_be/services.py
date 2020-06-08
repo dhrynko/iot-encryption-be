@@ -6,8 +6,8 @@ from .config import config
 dynamo_db = boto3.client('dynamodb')
 
 
-def scan_messages_table():
-    items = dynamo_db.scan(TableName=config.messages_table)["Items"]
+def scan_table(table):
+    items = dynamo_db.scan(TableName=table)["Items"]
 
     return json_util.loads(items)
 
@@ -25,8 +25,6 @@ def get_encrypted_message(cypher_id):
         TableName=config.encrypted_messages_table,
         Key={"uid": {"S": cypher_id}})["Item"]
 
-    print(message)
-
     return json_util.loads(message)
 
 
@@ -40,7 +38,7 @@ def put_message(message):
 
 
 def put_encrypted_message(cypher):
-    if cypher.get("cypher"):
+    if not isinstance(cypher, str):
         dynamo_db.put_item(
             TableName=config.encrypted_messages_table,
             Item={"cypher": {"S": cypher.get("cypher")},

@@ -1,4 +1,5 @@
 import scrypt
+import codecs
 from base64 import b64encode, b64decode
 from Cryptodome.Cipher import AES
 from Cryptodome.Cipher import DES
@@ -35,33 +36,17 @@ def encrypt_des(message, key):
     else:
         while len(message) % 8 != 0:
             message += ' '
-        cipher = DES.new(key, DES.MODE_ECB)
+        cipher = DES.new(bytes(key, 'utf-8'), DES.MODE_ECB)
         encrypted = cipher.encrypt(bytes(message, 'utf-8'))
-        return encrypted
+
+        return f"{encrypted}"
 
 
 def decrypt_des(encrypted, password):
     if len(password) != 8:
         raise Exception
     else:
-        cipher = DES.new(password, DES.MODE_ECB)
-        decrypted = cipher.decrypt(encrypted)
-        return decrypted
-
-
-# def main():
-#     password = "stas"
-#     encrypted = encrypt_aes_256("Sample string", password)
-#     print(encrypted)
-#     decrypted = decrypt_aes_256(encrypted, password)
-#     print(bytes.decode(decrypted))
-#
-#     password = "12345678"
-#     password2 = bytes(password, 'utf-8')
-#     encrypted = encrypt_des("Sample string 2", password2)
-#     print(encrypted)
-#     decrypted = decrypt_des(encrypted, password2)
-#     print(bytes.decode(decrypted))
-#
-#
-# main()
+        cipher = DES.new(bytes(password, "utf-8"), DES.MODE_ECB)
+        bytes_tuple = encrypted[2:-1].replace("\\\\", "\\").encode()
+        decrypted = cipher.decrypt(codecs.escape_decode(bytes_tuple, "hex")[0])
+        return bytes.decode(decrypted)
